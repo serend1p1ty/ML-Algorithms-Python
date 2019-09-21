@@ -1,16 +1,17 @@
 from collections import Counter
 import numpy as np
 
+
 class DecisionTree:
-    def __init__(self, evaluateCriterion='InformationGain'):
-        self.attribute = None # 当前节点要根据什么属性划分集合
-        self.threshold = None # 用来划分集合的属性为连续属性时，划分集合所使用的阈值
-        self.result = None    # 当前节点为叶子节点时，预测的结果
-        self.children = {}    # 子节点
-        if evaluateCriterion == 'InformationGain':
-            self.evaluateFunc = self.maxInformationGain
+    def __init__(self, evaluate_criterion='information_gain'):
+        self.attribute = None  # 当前节点要根据什么属性划分集合
+        self.threshold = None  # 用来划分集合的属性为连续属性时，划分集合所使用的阈值
+        self.result = None     # 当前节点为叶子节点时，预测的结果
+        self.children = {}     # 子节点
+        if evaluate_criterion == 'information_gain':
+            self.evaluate_func = self.max_info_gain
         else:
-            raise NotImplementedError("%s hasn't been implemented" % evaluateCriterion)
+            raise NotImplementedError("%s hasn't been implemented" % evaluate_criterion)
 
     @staticmethod
     def entropy(X, y):
@@ -22,10 +23,10 @@ class DecisionTree:
         return entro
 
     @staticmethod
-    def indexByList(list1, list2):
+    def index_by_list(list1, list2):
         return [list1[i] for i in list2]
 
-    def devideByAttribute(self, X, y, attribute):
+    def devide_by_attribute(self, X, y, attribute):
         subsets = {}
         threshold = None
 
@@ -34,98 +35,99 @@ class DecisionTree:
             for i in range(len(X)):
                 if X[i][attribute] in subsets.keys():
                     subsets[X[i][attribute]].append(i)
-                else: subsets[X[i][attribute]] = [i]
+                else:
+                    subsets[X[i][attribute]] = [i]
         else:
             # 连续属性
             column = [row[attribute] for row in X]
-            columnCopy = column.copy()
-            columnCopy.sort()
+            column_copy = column.copy()
+            column_copy.sort()
 
             # 获得所有候选的分割阈值
             candidates = []
-            for i in range(len(columnCopy) - 1):
-                candidates.append((columnCopy[i] + columnCopy[i + 1]) / 2)
+            for i in range(len(column_copy) - 1):
+                candidates.append((column_copy[i] + column_copy[i + 1]) / 2)
 
-            index = self.indexByList # 简化函数名称
-            baseEntro = self.entropy(X, y)
-            maxGain = -1
+            index = self.index_by_list  # 简化函数名称
+            base_entro = self.entropy(X, y)
+            max_gain = -1
             subsets = {}
 
             # 选择最大化信息增益的阈值
             for candidate in candidates:
-                splitFunc = lambda i: column[i] <= candidate
-                part1 = [i for i in range(len(column)) if splitFunc(i)]
-                part2 = [i for i in range(len(column)) if not splitFunc(i)]
+                split_func = lambda i: column[i] <= candidate
+                part1 = [i for i in range(len(column)) if split_func(i)]
+                part2 = [i for i in range(len(column)) if not split_func(i)]
                 p = len(part1) / len(column)
-                entroSum = p * self.entropy(index(X, part1), index(y, part1)) \
-                        + (1 - p) * self.entropy(index(X, part2), index(y, part2))
-                if baseEntro - entroSum > maxGain:
-                    maxGain = baseEntro - entroSum
+                entro_sum = p * self.entropy(index(X, part1), index(y, part1)) \
+                    + (1 - p) * self.entropy(index(X, part2), index(y, part2))
+                if base_entro - entro_sum > max_gain:
+                    max_gain = base_entro - entro_sum
                     subsets['smaller'] = part1
                     subsets['larger'] = part2
                     threshold = candidate
 
         return subsets, threshold
 
-    def maxInformationGain(self, X, y, attributes):
+    def max_info_gain(self, X, y, attributes):
         '''选择最大化信息增益的属性'''
-        index = self.indexByList # 简化函数名称
-        baseEntro = self.entropy(X, y)
-        maxGain = -1
-        bestAttr = None
-        bestThreshold = None
+        index = self.index_by_list
+        base_entro = self.entropy(X, y)
+        max_gain = -1
+        best_attr = None
+        best_threshold = None
         for attrID in attributes:
-            subsets, threshold = self.devideByAttribute(X, y, attrID)
-            entroSum = 0
+            subsets, threshold = self.devide_by_attribute(X, y, attrID)
+            entro_sum = 0
             for key in subsets:
                 p = len(subsets[key]) / len(X)
-                entroSum += p * self.entropy(index(X, subsets[key]), index(y, subsets[key]))
-            if baseEntro - entroSum > maxGain:
-                maxGain = baseEntro - entroSum
-                bestAttr = attrID
-                bestThreshold = threshold
+                entro_sum += p * self.entropy(index(X, subsets[key]), index(y, subsets[key]))
+            if base_entro - entro_sum > max_gain:
+                max_gain = base_entro - entro_sum
+                best_attr = attrID
+                best_threshold = threshold
 
-        return bestAttr, bestThreshold
+        return best_attr, best_threshold
 
     def fit(self, X, y):
-        self.trainDecisionTree(X, y, list(range(0, len(X[0]))))
+        self.train_decision_tree(X, y, list(range(0, len(X[0]))))
 
-    def trainDecisionTree(self, X, y, attributes):
+    def train_decision_tree(self, X, y, attributes):
         # 如果所有样本都属于同一类别C，则将当前节点标记为C类叶节点
         if len(set(y)) == 1:
             self.result = y[0]
             return
 
         # 判断样本在属性集上取值是否相同
-        isSame = 1
+        is_same = 1
         for attrID in attributes:
             column = [row[attrID] for row in X]
             if len(set(column)) != 1:
-                isSame = 0
+                is_same = 0
 
         # 如果属性集为空，或者样本在属性集上取值相同，则将类别
         # 设定为该节点所含样本最多的类别
-        if not len(y) or isSame:
+        if not len(y) or is_same:
             self.result = Counter(y).most_common()[0][0]
             return
 
-        bestAttr, bestThreshold = self.evaluateFunc(X, y, attributes)
-        self.attribute = bestAttr
-        self.threshold = bestThreshold
-        subsets, _ = self.devideByAttribute(X, y, bestAttr)
+        best_attr, best_threshold = self.evaluate_func(X, y, attributes)
+        self.attribute = best_attr
+        self.threshold = best_threshold
+        subsets, _ = self.devide_by_attribute(X, y, best_attr)
 
         # 在父节点上使用了连续属性并不会禁用子节点继续使用该属性
-        subAttributes = attributes.copy()
-        if not bestThreshold:
-            subAttributes.remove(bestAttr)
+        subattributes = attributes.copy()
+        if not best_threshold:
+            subattributes.remove(best_attr)
 
         # 递归地训练子节点
         for key in subsets:
             subX = [X[i] for i in subsets[key]]
             suby = [y[i] for i in subsets[key]]
-            newChild = DecisionTree()
-            newChild.trainDecisionTree(subX, suby, subAttributes)
-            self.children[key] = newChild
+            new_child = DecisionTree()
+            new_child.train_decision_tree(subX, suby, subattributes)
+            self.children[key] = new_child
 
     def predict(self, x):
         # 如果当前节点为叶节点
@@ -136,12 +138,13 @@ class DecisionTree:
         if self.threshold:
             if x[self.attribute] <= self.threshold:
                 return self.children['smaller'].predict(x)
-            else: return self.children['larger'].predict(x)
+            else:
+                return self.children['larger'].predict(x)
 
         return self.children[x[self.attribute]].predict(x)
 
 if __name__ == "__main__":
-    decisionTree = DecisionTree()
+    decision_tree = DecisionTree()
     dataset = [
         ['青绿', '蜷缩', '浊响', '清晰', '凹陷', '硬滑', 0.697, 0.460, '好瓜'],
         ['乌黑', '蜷缩', '沉闷', '清晰', '凹陷', '硬滑', 0.774, 0.376, '好瓜'],
@@ -163,5 +166,5 @@ if __name__ == "__main__":
     ]
     X = [row[:8] for row in dataset]
     y = [row[8] for row in dataset]
-    decisionTree.fit(X, y)
-    print(decisionTree.predict(['乌黑', '蜷缩', '浊响', '清晰', '凹陷', '硬滑', 0.3, 0.264]))
+    decision_tree.fit(X, y)
+    print(decision_tree.predict(['青绿', '稍蜷', '浊响', '清晰', '凹陷', '硬滑', 0.3, 0.264]))
