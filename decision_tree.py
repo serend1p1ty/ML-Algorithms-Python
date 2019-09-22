@@ -1,3 +1,11 @@
+'''
+@Author: 520Chris
+@Date: 2019-09-18 18:48:38
+@LastEditor: 520Chris
+@LastEditTime: 2019-09-22 11:31:13
+@Description: Implementation of decision tree
+'''
+
 from collections import Counter
 import numpy as np
 
