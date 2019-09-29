@@ -2,15 +2,17 @@
 @Author: 520Chris
 @Date: 2019-09-21 16:12:24
 @LastEditor: 520Chris
-@LastEditTime: 2019-09-24 16:38:57
+@LastEditTime: 2019-09-30 17:10:09
 @Description: Implementation of BP neural network
 '''
 
 import random
 import numpy as np
 from pathlib import Path
+from scipy import optimize
 from scipy import io as spio
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 
@@ -50,11 +52,11 @@ class Layer:
     def __init__(self, unit_num=None):
         self.unit_num = unit_num
         self.theta = None
-        self.gradient = 0
+        self.gradient = None
         self.output_data = None
 
     def initializer(self, pre_units):
-        '''初始化参数矩阵和梯度矩阵
+        '''初始化参数矩阵和梯度矩阵(注：参数矩阵的初始值非常重要)
 
         Args:
             pre_units: 前一层的神经元的数目
@@ -92,14 +94,18 @@ class Layer:
 
 
 class BPNN:
-    def __init__(self, max_round=1000, learning_rate=0.3, regular_param=1):
+    def __init__(self, max_round=500, regular_param=1):
         self.layers = []
         self.max_round = max_round
-        self.learning_rate = learning_rate
         self.regular_param = regular_param
 
     def add_layer(self, layer):
         self.layers.append(layer)
+
+    def init_layers(self, thetas):
+        for layer in self.layers:
+            layer.theta = thetas[0:layer.theta.size].reshape(layer.theta.shape)
+            thetas = thetas[layer.theta.size:]
 
     def forward(self, x):
         '''神经网络执行一次前向传播'''
@@ -125,58 +131,82 @@ class BPNN:
             else:
                 delta = layer.backward(delta, self.layers[layer_id - 1].output_data)
 
-    def cal_loss(self, y_predict, y):
+    def cal_gradient(self, thetas, X, y):
+        '''计算梯度'''
+        m = X.shape[0]
+        self.init_layers(thetas)
+
+        for i in range(m):
+            x_i = X[[i]].T
+            y_i = y[[i]].T
+            self.forward(x_i)
+            self.backward(x_i, y_i)
+
+        gradient = np.array([])
+        for layer in self.layers:
+            layer.gradient /= m
+            layer.gradient[:, :-1] += self.regular_param / m * layer.theta[:, :-1]
+            gradient = np.append(gradient, layer.gradient)
+            layer.gradient = np.zeros(layer.theta.shape)
+
+        return gradient
+
+    def cal_loss(self, thetas, X, y):
+        '''计算代价函数的值'''
+        m = X.shape[0]
+        self.init_layers(thetas)
+        all_loss = 0
+        for i in range(m):
+            x_i = X[[i]].T
+            y_i = y[[i]].T
+            output = self.forward(x_i)
+            all_loss += self.loss(output, y_i)
+        print("-----Loss: %s" % (all_loss / m))
+        return all_loss / m
+
+    def loss(self, y_predict, y):
         '''计算损失'''
         pos = np.where(y == 1)[0]
         neg = np.where(y == 0)[0]
         return -(np.log(y_predict[pos]).sum() + np.log(1 - y_predict[neg]).sum())
 
-    def check_gradient(self, x, y):
+    def check_gradient(self, thetas, X, y):
         '''通过数值法来验证计算的梯度是否准确'''
-        for layer_id, layer in enumerate(self.layers):
-            m, n = layer.theta.shape
-            e = 1e-4
-            for i in range(m):
-                for j in range(n):
-                    layer.theta[i, j] += e
-                    output = self.forward(x)
-                    loss1 = self.cal_loss(output, y)
-                    layer.theta[i, j] -= 2 * e
-                    output = self.forward(x)
-                    loss2 = self.cal_loss(output, y)
-                    gradient = (loss1 - loss2) / (2 * e)
-                    layer.theta[i, j] += e
-                    print("Gradient check for %s-th layer [%s][%s] program_grad: %s, real_grad: %s"
-                          % (layer_id, i, j, layer.gradient[i][j], gradient))
+        e = 1e-4
+        gradient = np.array([])
+        for i in range(len(thetas)):
+            thetas[i] += e
+            loss1 = self.cal_loss(thetas, X, y)
+            thetas[i] -= 2 * e
+            loss2 = self.cal_loss(thetas, X, y)
+            gradient = np.append(gradient, (loss1 - loss2) / (2 * e))
+            thetas[i] += e
+        return gradient
 
     def fit(self, X, y):
         m = X.shape[0]
+        initial_thetas = np.array([])
 
         for i, layer in enumerate(self.layers):
             if not i:
                 layer.initializer(X.shape[1])
             else:
                 layer.initializer(self.layers[i - 1].unit_num)
+            initial_thetas = np.append(initial_thetas, layer.theta.flatten())
 
-        for round in range(self.max_round):
-            loss = 0
-            for i in range(m):
-                x_i = X[[i]].T
-                y_i = y[[i]].T
-                output = self.forward(x_i)
-                loss += self.cal_loss(output, y_i)
-                self.backward(x_i, y_i)
+        # 用数值法验证计算的准确性
+        # num_grad = self.check_gradient(initial_thetas, X[0].reshape(1, -1), y[0].reshape(1, -1))
+        # grad = self.cal_gradient(initial_thetas, X[0].reshape(1, -1), y[0].reshape(1, -1))
+        # print(np.linalg.norm(num_grad - grad) / np.linalg.norm(num_grad + grad))  # 结果应该小于1e-9
 
-                # if not i:
-                #     self.check_gradient(x_i, y_i)
+        print("-----Begin training")
+        thetas = optimize.fmin_cg(self.cal_loss,
+                                  initial_thetas,
+                                  fprime=self.cal_gradient,
+                                  args=(X, y),
+                                  maxiter=self.max_round)
 
-            print("Loss at %s-th epoch: %s" % (round, loss))
-
-            for layer in self.layers:
-                layer.gradient /= m
-                layer.gradient[:, :-1] += self.regular_param / m * layer.theta[:, :-1]
-                layer.theta -= self.learning_rate * layer.gradient
-                layer.gradient = np.zeros(layer.theta.shape)
+        self.init_layers(thetas)
 
     def predict(self, X):
         X = X.T
@@ -185,11 +215,11 @@ class BPNN:
                 output = layer.forward(X)
             else:
                 output = layer.forward(output)
-        return output.T
+        return (output == output.max(axis=0)).astype(int).T
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent
-    file_path = (base_path / "data_digits.mat").resolve()
+    file_path = (base_path / "digits.mat").resolve()
     data_img = spio.loadmat(file_path)
     X = data_img['X']
     y = data_img['y']
@@ -198,27 +228,15 @@ if __name__ == "__main__":
     random_rows = random.sample(range(X.shape[0]), 100)
     display_data(X[random_rows])
 
-    X_train, X_test, y_train_origin, y_test_origin = train_test_split(X,
-                                                                      y,
-                                                                      test_size=0.3,
-                                                                      random_state=0)
-
     ohe = OneHotEncoder(categories='auto')
-    ohe.fit(y)
-    y_train = ohe.transform(y_train_origin).toarray()
-    y_test = ohe.transform(y_test_origin).toarray()
+    y = ohe.fit_transform(y)
 
-    bpnn = BPNN(max_round=1000, learning_rate=1, regular_param=10)
+    bpnn = BPNN()
     bpnn.add_layer(Layer(25))
     bpnn.add_layer(Layer(10))
-    bpnn.fit(X_train, y_train)
+    bpnn.fit(X, y)
 
-    p = bpnn.predict(X_train)
+    p = bpnn.predict(X)
     p = ohe.inverse_transform(p)
-    accuracy = 100 * (p == y_train_origin).sum() / len(p)
+    accuracy = accuracy_score(y, p)
     print("-----Accuracy in train-set: %s%%" % accuracy)
-
-    p = bpnn.predict(X_test)
-    p = ohe.inverse_transform(p)
-    accuracy = 100 * (p == y_test_origin).sum() / len(p)
-    print("-----Accuracy in test-set: %s%%" % accuracy)
