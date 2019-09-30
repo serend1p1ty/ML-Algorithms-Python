@@ -2,7 +2,7 @@
 @Author: 520Chris
 @Date: 2019-09-21 16:12:24
 @LastEditor: 520Chris
-@LastEditTime: 2019-09-30 17:10:09
+@LastEditTime: 2019-09-30 23:26:56
 @Description: Implementation of BP neural network
 '''
 
@@ -161,7 +161,7 @@ class BPNN:
             y_i = y[[i]].T
             output = self.forward(x_i)
             all_loss += self.loss(output, y_i)
-        print("-----Loss: %s" % (all_loss / m))
+        print("Loss: %s" % (all_loss / m))
         return all_loss / m
 
     def loss(self, y_predict, y):
@@ -222,14 +222,14 @@ if __name__ == "__main__":
     file_path = (base_path / "digits.mat").resolve()
     data_img = spio.loadmat(file_path)
     X = data_img['X']
-    y = data_img['y']
+    y_origin = data_img['y']
 
     # 随机展示100张图片
     random_rows = random.sample(range(X.shape[0]), 100)
     display_data(X[random_rows])
 
     ohe = OneHotEncoder(categories='auto')
-    y = ohe.fit_transform(y)
+    y = ohe.fit_transform(y_origin).toarray()
 
     bpnn = BPNN()
     bpnn.add_layer(Layer(25))
@@ -238,5 +238,5 @@ if __name__ == "__main__":
 
     p = bpnn.predict(X)
     p = ohe.inverse_transform(p)
-    accuracy = accuracy_score(y, p)
+    accuracy = 100 * accuracy_score(y_origin, p)
     print("-----Accuracy in train-set: %s%%" % accuracy)
