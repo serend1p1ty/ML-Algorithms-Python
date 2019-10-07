@@ -2,7 +2,7 @@
 @Author: 520Chris
 @Date: 2019-09-21 16:12:24
 @LastEditor: 520Chris
-@LastEditTime: 2019-09-30 23:26:56
+@LastEditTime: 2019-10-01 00:24:16
 @Description: Implementation of BP neural network
 '''
 
@@ -166,9 +166,7 @@ class BPNN:
 
     def loss(self, y_predict, y):
         '''计算损失'''
-        pos = np.where(y == 1)[0]
-        neg = np.where(y == 0)[0]
-        return -(np.log(y_predict[pos]).sum() + np.log(1 - y_predict[neg]).sum())
+        return -(np.log(y_predict[y == 1]).sum() + np.log(1 - y_predict[y == 0]).sum())
 
     def check_gradient(self, thetas, X, y):
         '''通过数值法来验证计算的梯度是否准确'''
