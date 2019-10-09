@@ -1,38 +1,62 @@
-'''
+"""
 @Author: 520Chris
 @Date: 2019-09-26 19:46:27
 @LastEditor: 520Chris
-@LastEditTime: 2019-09-28 17:20:43
+@LastEditTime: 2019-10-11 14:56:10
 @Description: Implementation of naive bayes classifier
-'''
+"""
+
+from collections import Counter
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from sklearn import datasets
-from collections import Counter
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RepeatedKFold
 
 
 def read_data():
-    '''数据预处理'''
+    """数据预处理"""
     base_path = Path(__file__).parent
     file_path = (base_path / "adult.csv").resolve()
     data = pd.read_csv(file_path, header=None)
     data.columns = [
-        "Age", "WorkClass", "fnlwgt", "Education", "EducationNum",
-        "MaritalStatus", "Occupation", "Relationship", "Race", "Gender",
-        "CapitalGain", "CapitalLoss", "HoursPerWeek", "NativeCountry", "Income"
+        "Age",
+        "WorkClass",
+        "fnlwgt",
+        "Education",
+        "EducationNum",
+        "MaritalStatus",
+        "Occupation",
+        "Relationship",
+        "Race",
+        "Gender",
+        "CapitalGain",
+        "CapitalLoss",
+        "HoursPerWeek",
+        "NativeCountry",
+        "Income",
     ]
     y = data["Income"].values
     X = data.drop("Income", axis=1).values
     return X, y
 
 
-class NaiveBayesClassifier():
-    def cal_prob(self, y):
-        '''计算每个值出现的频率'''
+class NaiveBayesClassifier:
+    """朴素贝叶斯分类器
+
+    Attributes:
+        prior_prob: 先验概率
+        likelihood: 似然概率
+    """
+
+    def __init__(self):
+        self.prior_prob = None
+        self.likelihood = None
+
+    @staticmethod
+    def cal_prob(y):
+        """计算每个值出现的频率"""
         prior_prob = Counter(y)
         for key in prior_prob:
             prior_prob[key] /= len(y)
@@ -58,14 +82,11 @@ class NaiveBayesClassifier():
             prob = self.likelihood[(class_id, attr)]
             if x in prob:
                 return prob[x]
-            else:
-                # 如果当前属性的取值没有在训练集出现过，则似然概率为0.5
-                return 0.5
+            return 0.5  # 如果当前属性的取值没有在训练集出现过, 则似然概率为0.5
 
         # 连续属性
         mean, var = self.likelihood[(class_id, attr)]
-        return 1 / ((2 * np.pi) ** 0.5 * var ** 0.5) \
-            * np.exp(-(x - mean) ** 2 / (2 * var))
+        return 1 / ((2 * np.pi) ** 0.5 * var ** 0.5) * np.exp(-(x - mean) ** 2 / (2 * var))
 
     def predict(self, X):
         p = []
@@ -85,7 +106,8 @@ class NaiveBayesClassifier():
             p.append(predict_class)
         return np.array(p)
 
-if __name__ == "__main__":
+
+def main():
     X, y = read_data()
     train_res, test_res = [], []
 
@@ -114,5 +136,11 @@ if __name__ == "__main__":
     std_train = np.var(train_res) ** 0.5
     mean_test = np.mean(test_res)
     std_test = np.var(test_res) ** 0.5
-    print("Train-set: %s%% (std: %s)\nTest-set: %s%% (std: %s)" % (mean_train, std_train,
-                                                                   mean_test, std_test))
+    print(
+        "Train-set: %s%% (std: %s)\nTest-set: %s%% (std: %s)"
+        % (mean_train, std_train, mean_test, std_test)
+    )
+
+
+if __name__ == "__main__":
+    main()
