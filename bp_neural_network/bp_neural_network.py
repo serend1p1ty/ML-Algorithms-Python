@@ -1,10 +1,13 @@
-"""
-@Author: 520Chris
-@Date: 2019-09-21 16:12:24
-@LastEditor: 520Chris
-@LastEditTime: 2019-10-11 16:34:20
-@Description: Implementation of BP neural network
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# ----------------------------------------
+# Author: 520Chris
+# Date: 2019-10-11 16:34:44
+# LastEditor: 520Chris
+# LastEditTime: 2019-11-17 09:28:35
+# Description: Implementation of BP neural network
+# ----------------------------------------
 
 from pathlib import Path
 

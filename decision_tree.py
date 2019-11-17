@@ -1,10 +1,13 @@
-"""
-@Author: 520Chris
-@Date: 2019-09-18 18:48:38
-@LastEditor: 520Chris
-@LastEditTime: 2019-10-11 14:56:25
-@Description: Implementation of decision tree
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# ----------------------------------------
+# Author: 520Chris
+# Date: 2019-09-18 18:48:38
+# LastEditor: 520Chris
+# LastEditTime: 2019-11-17 09:24:31
+# Description: The implementation of decision tree
+# ----------------------------------------
 
 from collections import Counter
 

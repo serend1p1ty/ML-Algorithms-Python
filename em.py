@@ -1,10 +1,13 @@
-"""
-@Author: 520Chris
-@Date: 2019-10-24 15:38:13
-@LastEditor: 520Chris
-@LastEditTime: 2019-10-24 20:07:34
-@Description: Implementation of expectation-maximum algorithm
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# ----------------------------------------
+# Author: 520Chris
+# Date: 2019-10-24 15:38:13
+# LastEditor: 520Chris
+# LastEditTime: 2019-11-17 09:26:32
+# Description: Implementation of expectation-maximum algorithm
+# ----------------------------------------
 
 import matplotlib.pyplot as plt
 import numpy as np

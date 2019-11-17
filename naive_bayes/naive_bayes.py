@@ -1,10 +1,13 @@
-"""
-@Author: 520Chris
-@Date: 2019-09-26 19:46:27
-@LastEditor: 520Chris
-@LastEditTime: 2019-10-11 14:56:10
-@Description: Implementation of naive bayes classifier
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# ----------------------------------------
+# Author: 520Chris
+# Date: 2019-10-11 16:34:45
+# LastEditor: 520Chris
+# LastEditTime: 2019-11-17 09:27:57
+# Description: Implementation of naive bayes classifier
+# ----------------------------------------
 
 from collections import Counter
 from pathlib import Path
